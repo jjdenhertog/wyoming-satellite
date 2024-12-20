@@ -182,6 +182,8 @@ class SatelliteBase:
         if self._writer is None:
             return
 
+        _LOGGER.debug("---event to server---")
+
         try:
             await async_write_event(event, self._writer)
         except Exception as err:
@@ -317,6 +319,8 @@ class SatelliteBase:
                 self._stt_stop_task = asyncio.create_task(
                     self._delayed_stt_stop(remaining_time)
                 )
+
+                forward_event = False
 
             # await self.trigger_stt_stop()
         elif Transcript.is_type(event.type):
