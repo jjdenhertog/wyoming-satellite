@@ -287,11 +287,14 @@ class SatelliteBase:
             # Wake word detected
             _LOGGER.debug("Wake word detected")
             await self.trigger_detection(Detection.from_event(event))
+            _LOGGER.debug("Continue??")
         elif VoiceStarted.is_type(event.type):
             # STT start
+            _LOGGER.debug("Start SST")
             await self.trigger_stt_start()
         elif VoiceStopped.is_type(event.type):
             # STT stop
+            _LOGGER.debug("Stop SST")
             await self.trigger_stt_stop()
         elif Transcript.is_type(event.type):
             # STT text
@@ -655,7 +658,6 @@ class SatelliteBase:
                 self._unmute_microphone_task = asyncio.create_task(
                     self._unmute_microphone_after(seconds_to_mute)
                 )
-                await asyncio.sleep(seconds_to_mute)
             except Exception:
                 self.microphone_muted = False
                 raise
