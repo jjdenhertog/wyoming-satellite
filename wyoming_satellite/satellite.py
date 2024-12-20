@@ -1,4 +1,5 @@
 """Satellite code."""
+
 import array
 import asyncio
 import logging
@@ -514,9 +515,11 @@ class SatelliteBase:
                     event = AudioChunk(
                         rate=chunk.rate,
                         width=chunk.width,
-                        channels=chunk.channels
-                        if (self.settings.mic.channel_index is None)
-                        else 1,
+                        channels=(
+                            chunk.channels
+                            if (self.settings.mic.channel_index is None)
+                            else 1
+                        ),
                         audio=audio_bytes,
                     ).event()
                 else:
@@ -644,6 +647,18 @@ class SatelliteBase:
     ) -> None:
         """Send WAV as events to sound service."""
         if (not wav_path) or (not self.settings.snd.enabled):
+
+            try:
+                seconds_to_mute = self.settings.mic.seconds_to_mute_after_awake_wav
+                _LOGGER.debug("Muting microphone for %s second(s)", seconds_to_mute)
+                self.microphone_muted = True
+                self._unmute_microphone_task = asyncio.create_task(
+                    self._unmute_microphone_after(seconds_to_mute)
+                )
+
+            except Exception:
+                self.microphone_muted = False
+                raise
             return
 
         try:

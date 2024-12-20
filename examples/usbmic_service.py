@@ -4,6 +4,8 @@ import argparse
 import asyncio
 import logging
 import time
+import subprocess
+
 from functools import partial
 
 from wyoming.event import Event
@@ -35,7 +37,9 @@ async def main() -> None:
     _LOGGER.info("Ready")
 
     # Turn on power to LEDs
-    pixel_ring.set_color_palette(0x0080ff, 0x007a37)
+    pixel_ring.set_vad_led(0)
+    pixel_ring.set_brightness(0x0A)
+    pixel_ring.set_color_palette(0xFF1493, 0xC71585)
     pixel_ring.think()
     await asyncio.sleep(3)
     pixel_ring.off()
@@ -49,8 +53,6 @@ async def main() -> None:
         pass
     finally:
         pixel_ring.off()
-
-
 class LEDsEventHandler(AsyncEventHandler):
     """Event handler for clients."""
 
@@ -68,30 +70,52 @@ class LEDsEventHandler(AsyncEventHandler):
         _LOGGER.debug("Client connected: %s", self.client_id)
 
     async def handle_event(self, event: Event) -> bool:
-        _LOGGER.debug(event)
+        _LOGGER.info(event)
+        #_LOGGER.info(event.type)
 
         if Detection.is_type(event.type):
-            _LOGGER.debug("Detection")
+            _LOGGER.info("Detection")
             pixel_ring.wakeup()
+            # _LOGGER.info("Mute")
+            # command = ["pactl", "set-source-volume", "3","20%"]
+            # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # stdout, stderr = process.communicate()
+            # time.sleep(2)
+            # _LOGGER.info("Unmute")
+            # command = ["pactl", "set-source-volume", "3", "100%"]
+            # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # stdout, stderr = process.communicate()
         elif VoiceStarted.is_type(event.type):
-            _LOGGER.debug("VoiceStarted")
+            _LOGGER.info("VoiceStarted")
             pixel_ring.speak()
         elif VoiceStopped.is_type(event.type):
-            _LOGGER.debug("VoiceStopped")
+            _LOGGER.info("VoiceStopped")
             pixel_ring.spin()
         elif StreamingStopped.is_type(event.type):
-            _LOGGER.debug("StreamingStopped")
+            _LOGGER.info("StreamingStopped")
             pixel_ring.off()
         elif SatelliteConnected.is_type(event.type):
-            _LOGGER.debug("SatelliteConnected")
+            _LOGGER.info("SatelliteConnected")
             pixel_ring.think()
             await asyncio.sleep(2)
             pixel_ring.off()
         elif Played.is_type(event.type):
-            _LOGGER.debug("Played")
+            _LOGGER.info("Played")
             pixel_ring.off()
+        elif event.type == "error":
+            _LOGGER.info("Error")
+            pixel_ring.off()
+        elif event.type == "transcript":
+            _LOGGER.info("Transcript")
+            pixel_ring.off()
+        #elif Error.is_type(event.type):
+        #    _LOGGER.info("Error")
+        #    pixel_ring.off()
+        #elif Transcript.is_type(event.type):
+        #    _LOGGER.info("Transcript")
+        #    pixel_ring.off()
         elif SatelliteDisconnected.is_type(event.type):
-            _LOGGER.debug("SatelliteDisconnected")
+            _LOGGER.info("SatelliteDisconnected")
             pixel_ring.mono(0xff0000)
 
         return True
