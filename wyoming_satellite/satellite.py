@@ -383,7 +383,7 @@ class SatelliteBase:
     async def _delayed_stt_stop(self, delay: float) -> None:
         try:
             if delay > 0:
-                _LOGGER.debug("Wait to trigger STT", delay)
+                _LOGGER.debug("Wait to trigger STT after %s seconds", delay)
                 await asyncio.sleep(delay)
 
             _LOGGER.debug("Trigger STT stop")
