@@ -282,6 +282,7 @@ class SatelliteBase:
             await self.trigger_tts_stop()
         elif Detect.is_type(event.type):
             # Wake word detection started
+            _LOGGER.debug("?")
             await self.trigger_detect()
         elif Detection.is_type(event.type):
             # Wake word detected
