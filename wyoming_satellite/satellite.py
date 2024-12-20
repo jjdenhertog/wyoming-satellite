@@ -75,10 +75,6 @@ class SatelliteBase:
     """Base class for satellites."""
 
     def __init__(self, settings: SatelliteSettings) -> None:
-        # Timer for minimum SST
-        self._stt_start_time: Optional[float] = None
-        self._stt_stop_task: Optional[asyncio.Task] = None
-
         self.settings = settings
         self.server_id: Optional[str] = None
         self._state = State.NOT_STARTED
@@ -181,6 +177,7 @@ class SatelliteBase:
         """Send an event to the server."""
         if self._writer is None:
             return
+
         try:
             await async_write_event(event, self._writer)
         except Exception as err:
@@ -285,7 +282,7 @@ class SatelliteBase:
             await self.trigger_tts_stop()
         elif Detect.is_type(event.type):
             # Wake word detection started
-            _LOGGER.debug("Start detecting wakeword")
+            _LOGGER.debug("?")
             await self.trigger_detect()
         elif Detection.is_type(event.type):
             # Wake word detected
@@ -295,31 +292,11 @@ class SatelliteBase:
         elif VoiceStarted.is_type(event.type):
             # STT start
             _LOGGER.debug("Start SST")
-            self._stt_start_time = time.monotonic()  # Record the start time
-
-            # Cancel any existing stop task
-            if self._stt_stop_task is not None:
-                self._stt_stop_task.cancel()
-                self._stt_stop_task = None
-
             await self.trigger_stt_start()
-
         elif VoiceStopped.is_type(event.type):
             # STT stop
             _LOGGER.debug("Stop SST")
-
-            if self._stt_start_time is not None:
-                elapsed_time = time.monotonic() - self._stt_start_time
-                remaining_time = max(0, 3 - elapsed_time)
-
-                # Schedule stop task after remaining time
-                self._stt_stop_task = asyncio.create_task(
-                    self._delayed_stt_stop(remaining_time)
-                )
-
-                forward_event = False
-
-            # await self.trigger_stt_stop()
+            await self.trigger_stt_stop()
         elif Transcript.is_type(event.type):
             # STT text
             _LOGGER.debug(event)
@@ -380,20 +357,6 @@ class SatelliteBase:
         _LOGGER.debug(run_pipeline)
         await self.event_to_server(run_pipeline)
         await self.forward_event(run_pipeline)
-
-    async def _delayed_stt_stop(self, delay: float) -> None:
-        try:
-            if delay > 0:
-                _LOGGER.debug("Wait to trigger STT after %s seconds", delay)
-                await asyncio.sleep(delay)
-
-            _LOGGER.debug("Trigger STT stop")
-            await self.trigger_stt_stop()
-        except asyncio.CancelledError:
-            _LOGGER.debug("Delayed STT stop task cancelled")
-        finally:
-            self._stt_stop_task = None
-            self._stt_start_time = None  # Reset start time
 
     async def _restart(self) -> None:
         """Disconnects from services and restarts loop."""
@@ -1047,7 +1010,6 @@ class AlwaysStreamingSatellite(SatelliteBase):
                 self.stt_audio_writer.start()
         elif Transcript.is_type(event.type) or Error.is_type(event.type):
             # Stop debug recording
-            _LOGGER.info("Stopping audio writer 3")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1133,7 +1095,6 @@ class VadStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording
-            _LOGGER.info("Stopping audio writer 4")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1169,7 +1130,6 @@ class VadStreamingSatellite(SatelliteBase):
             self.timeout_seconds = None
 
             # Stop debug recording
-            _LOGGER.info("Stopping audio writer 1")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1295,7 +1255,6 @@ class WakeStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording (stt)
-            _LOGGER.info("Stopping audio writer 5")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1330,7 +1289,6 @@ class WakeStreamingSatellite(SatelliteBase):
         self.is_streaming = False
 
         # Stop debug recording (stt)
-        _LOGGER.info("Stopping audio writer 2")
         if self.stt_audio_writer is not None:
             self.stt_audio_writer.stop()
 
