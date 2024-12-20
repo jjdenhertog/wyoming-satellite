@@ -75,6 +75,10 @@ class SatelliteBase:
     """Base class for satellites."""
 
     def __init__(self, settings: SatelliteSettings) -> None:
+        # Timer for minimum SST
+        self._stt_start_time: Optional[float] = None
+        self._stt_stop_task: Optional[asyncio.Task] = None
+
         self.settings = settings
         self.server_id: Optional[str] = None
         self._state = State.NOT_STARTED
@@ -292,11 +296,29 @@ class SatelliteBase:
         elif VoiceStarted.is_type(event.type):
             # STT start
             _LOGGER.debug("Start SST")
+            self._stt_start_time = time.monotonic()  # Record the start time
+
+            # Cancel any existing stop task
+            if self._stt_stop_task is not None:
+                self._stt_stop_task.cancel()
+                self._stt_stop_task = None
+
             await self.trigger_stt_start()
+
         elif VoiceStopped.is_type(event.type):
             # STT stop
             _LOGGER.debug("Stop SST")
-            await self.trigger_stt_stop()
+
+            if self._stt_start_time is not None:
+                elapsed_time = time.monotonic() - self._stt_start_time
+                remaining_time = max(0, 3 - elapsed_time)
+
+                # Schedule stop task after remaining time
+                self._stt_stop_task = asyncio.create_task(
+                    self._delayed_stt_stop(remaining_time)
+                )
+
+            # await self.trigger_stt_stop()
         elif Transcript.is_type(event.type):
             # STT text
             _LOGGER.debug(event)
@@ -357,6 +379,20 @@ class SatelliteBase:
         _LOGGER.debug(run_pipeline)
         await self.event_to_server(run_pipeline)
         await self.forward_event(run_pipeline)
+
+    async def _delayed_stt_stop(self, delay: float) -> None:
+        try:
+            if delay > 0:
+                _LOGGER.debug("Wait to trigger STT", delay)
+                await asyncio.sleep(delay)
+
+            _LOGGER.debug("Trigger STT stop")
+            await self.trigger_stt_stop()
+        except asyncio.CancelledError:
+            _LOGGER.debug("Delayed STT stop task cancelled")
+        finally:
+            self._stt_stop_task = None
+            self._stt_start_time = None  # Reset start time
 
     async def _restart(self) -> None:
         """Disconnects from services and restarts loop."""
