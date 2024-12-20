@@ -288,7 +288,7 @@ class SatelliteBase:
             # Wake word detected
             _LOGGER.debug("Wake word detected")
             await self.trigger_detection(Detection.from_event(event))
-            await asyncio.sleep(700)
+            await asyncio.sleep(0.7)
             _LOGGER.debug("Continue??")
         elif VoiceStarted.is_type(event.type):
             # STT start
