@@ -181,9 +181,6 @@ class SatelliteBase:
         """Send an event to the server."""
         if self._writer is None:
             return
-
-        _LOGGER.debug("---event to server---")
-
         try:
             await async_write_event(event, self._writer)
         except Exception as err:
