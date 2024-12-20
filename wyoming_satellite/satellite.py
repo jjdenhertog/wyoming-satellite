@@ -1047,6 +1047,7 @@ class AlwaysStreamingSatellite(SatelliteBase):
                 self.stt_audio_writer.start()
         elif Transcript.is_type(event.type) or Error.is_type(event.type):
             # Stop debug recording
+            _LOGGER.info("Stopping audio writer 3")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1132,6 +1133,7 @@ class VadStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording
+            _LOGGER.info("Stopping audio writer 4")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1167,6 +1169,7 @@ class VadStreamingSatellite(SatelliteBase):
             self.timeout_seconds = None
 
             # Stop debug recording
+            _LOGGER.info("Stopping audio writer 1")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1292,6 +1295,7 @@ class WakeStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording (stt)
+            _LOGGER.info("Stopping audio writer 5")
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.stop()
 
@@ -1326,6 +1330,7 @@ class WakeStreamingSatellite(SatelliteBase):
         self.is_streaming = False
 
         # Stop debug recording (stt)
+        _LOGGER.info("Stopping audio writer 2")
         if self.stt_audio_writer is not None:
             self.stt_audio_writer.stop()
 
