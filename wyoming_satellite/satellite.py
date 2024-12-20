@@ -655,7 +655,7 @@ class SatelliteBase:
                 self._unmute_microphone_task = asyncio.create_task(
                     self._unmute_microphone_after(seconds_to_mute)
                 )
-
+                await asyncio.sleep(seconds_to_mute)
             except Exception:
                 self.microphone_muted = False
                 raise
